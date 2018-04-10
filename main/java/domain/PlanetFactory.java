@@ -13,7 +13,7 @@ public class PlanetFactory {
 	 * This method validates the parameters, using the StarWars API, before create a planet.
 	 * The terrain and/or climate are corrected before the planet instantiation.
 	 */
-	public Planet createPlanet(String name, String climate, String terrain)
+	public Planet createPlanet(String id, String name, String climate, String terrain)
 	{
 		Planet validPlanet = swapi.searchPlanet(name);
 		
@@ -22,7 +22,12 @@ public class PlanetFactory {
 			String validTerrain = getCorrectPlanetTerrain(validPlanet, terrain);
 			String validClimate = getCorrectPlanetClimate(validPlanet, climate);
 			
-			return new Planet(name, validClimate, validTerrain, validPlanet.getAppearances());
+			if (id == null)
+			{
+				return new Planet(validPlanet.getName(), validClimate, validTerrain, validPlanet.getAppearance());
+			}
+			
+			return new Planet(id, validPlanet.getName(), validClimate, validTerrain, validPlanet.getAppearance());
 		}
 		
 		return null;

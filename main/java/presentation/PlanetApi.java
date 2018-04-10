@@ -6,126 +6,132 @@ import static spark.Spark.delete;
 
 import java.util.ArrayList;
 
-import com.mongodb.DBObject;
-
+import com.mongodb.DB;
 import domain.Planet;
 import domain.PlanetAdaptor;
 import domain.PlanetFactory;
-import persistence.DBConfig;
-import persistence.DatabaseHelper;
+import domain.ReturnMessages;
 import persistence.PlanetDOHelper;
-
-// TODO Melhorar mensagens de resposta
-// TODO Add http status correto
-// TODO criar os testes para essa classe
-// TODO criar a documentacao com os endpoints
 
 public class PlanetApi {
 	
 	PlanetDOHelper planetDb;
 	PlanetFactory factory;
 	
-	public PlanetApi()
+	public PlanetApi(DB database, String collectionName)
 	{
-		initDatabase();
 		initRoutes();
+		initDatabase(database, collectionName);
+				
+		// Create two planets
 		factory = new PlanetFactory();
-		
+		PlanetFactory factory = new PlanetFactory();
+		planetDb.insertPlanet(factory.createPlanet("1", "Kamino", "temperate", "ocean"));	
+		planetDb.insertPlanet(factory.createPlanet("2", "jakku", "unknown", "deserts"));
 	}
 	
-	//Database
-	private void initDatabase()
+	private void initDatabase(DB database, String collectionName)
 	{
-		planetDb = new PlanetDOHelper(
-				DatabaseHelper.getInstance(
-						DBConfig.getConnectionUrl())
-				.getDabase(),
-				DBConfig.getPlanetsCollectionName());
+		planetDb = new PlanetDOHelper(database, collectionName);
 	}
 	
-	//Routes
 	private void initRoutes()
 	{
 		// List all planets
 		get("/planets", (req, res) -> 
 		{
 			res.type("application/json");
-			PlanetFactory factory = new PlanetFactory();
-			Planet kamino = factory.createPlanet("Kamino", "temperate", "ocean");
-			Planet jakku = factory.createPlanet("jakku", "unknown", "deserts");
-			
-			// valid insertion
-			planetDb.insertPlanet(kamino);	
-			planetDb.insertPlanet(jakku);
-			ArrayList<DBObject> planets = planetDb.readAllPlanets();
+			ArrayList<Planet> planets = planetDb.getAllPlanets();
 			
 			// Database empty
 			if (planets.size() == 0)
 			{
-				return "Nenhum planeta a ser exibido.";
+				return ReturnMessages.NO_ELEMENTS;
 			}
 			
-			res.status(200);
-			return planets;
+			return PlanetAdaptor.toObjectList(planets);
 		});
 		
 		// Search a planet by id
 		get("/planets/id/:id", (req, res) ->
 		{
 			res.type("application/json");
-			DBObject planet = planetDb.findPlanetById(req.params(":id"));
-			if (planet == null)
+			String id = req.params(":id");
+			
+			if (id == null)
 			{
-				return "Id invalido";
+				return ReturnMessages.INVALID_ID;
 			}
 			
-			res.status(200);
-			return planet;
+			Planet planet = planetDb.findPlanetById(id);
+			
+			if (planet == null)
+			{
+				return ReturnMessages.NOT_FOUND;
+			}
+			
+			return PlanetAdaptor.toObject(planet);
 		});
 		
 		// Search a planet by name
 		get("/planets/name/:name", (req, res) ->
 		{
 			res.type("application/json");
-			DBObject planet = planetDb.findPlanetByName(req.params(":name"));
+			String name = req.params(":name");
+			
+			if (name == null)
+			{
+				return ReturnMessages.INVALID_NAME;
+			}
+			
+			Planet planet = planetDb.findPlanetByName(name);
 			
 			if (planet == null)
 			{
-				return "Nome invalido";
+				return ReturnMessages.NOT_FOUND;
 			}
 			
-			res.status(200);
-			return planet;
+			return PlanetAdaptor.toObject(planet);
 		});	
 		
 
 		// Create a planet
-		post("/create", (req, res) -> {
+		post("planets/create", (req, res) -> {
+			String name = req.queryParams("name");
+			String climate = req.queryParams("climate");
+			String terrain = req.queryParams("terrain");
 			
-			if(planetDb.insertPlanet(factory.createPlanet(req.queryParams("name"), req.queryParams("climate"), req.queryParams("terrain"))))
+			if (name == null || climate == null || terrain == null)
 			{
-				res.status(200);
-				return "So alegria";
+				return ReturnMessages.NULL_PARAM;
+			}			
+			
+			if(planetDb.insertPlanet(factory.createPlanet(null, name, climate, terrain)))
+			{
+				return PlanetAdaptor.toObject(planetDb.findPlanetByName(name));
 			}
 			else
 			{
-				res.status(500);
-				return "Problema na insercao";
+				return ReturnMessages.ERROR_CREATE;
 			}
 		});
 		
-		// Create a planet
-		delete("/:id", (req, res) -> {
+		// Delete a planet
+		delete("planets/delete", (req, res) -> {
+			String id = req.queryParams("id");
 			
-			if (planetDb.deletePlanet(req.queryParams(":id")))
+			if (id == null)
 			{
-				res.status(200);
-				return "So alegria!";
+				return ReturnMessages.INVALID_ID;
+			}
+			
+			if (planetDb.deletePlanet(id))
+			{
+				return ReturnMessages.SUCCESS_DELETE;
 			}
 			else
 			{
-				res.status(500);
-				return "Problema pra apagar";
+				return ReturnMessages.ERROR_DELETE;
 			}
 		});
 	}

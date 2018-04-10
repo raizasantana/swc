@@ -1,5 +1,8 @@
 package domain;
 
+import java.io.FileInputStream;
+import java.util.Properties;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -7,9 +10,23 @@ import javax.ws.rs.core.MediaType;
 
 public class StarWarsApiHandler 
 {	
-	private static final String SEARCH_PLANET_URL = "https://swapi.co/api/planets/";
 	private Client client;
 	private WebTarget target;
+	private Properties properties;
+	
+	private Boolean initProperties()
+	{		
+		try 
+		{
+			properties = new Properties();
+			properties.load(new FileInputStream("config.properties"));
+			return true;
+		} 
+		catch (Exception e) {
+			return false;
+		}
+		
+	}
 	
 	private void initTarget(String resourceName, String searchURL)
 	{
@@ -20,16 +37,34 @@ public class StarWarsApiHandler
 	
 	private Planet getPlanetFromApi()
 	{
-		PlanetResponse response =  target
-				.request(MediaType.APPLICATION_JSON)
-				.get(PlanetResponse.class);
-		
-		return response.getPlanet();
+		try
+		{
+			PlanetResponse response =  target
+					.request(MediaType.APPLICATION_JSON)
+					.get(PlanetResponse.class);
+			
+			if (response.getResults().size() > 0)
+			{
+				return PlanetAdaptor.toPlanet(response.getResults().get(0));
+			}
+			
+			return null;
+		}
+		catch (Exception ex)
+		{
+			return null;
+		}		
 	}
 	
 	public Planet searchPlanet(String planetName)
 	{
-		initTarget(planetName, SEARCH_PLANET_URL);
-		return getPlanetFromApi();
+		if (initProperties())
+		{
+			initTarget(planetName, properties.getProperty("SWSearchPlanetUrl"));
+			return getPlanetFromApi();
+		}
+		
+		return null;
+		
 	}
 }

@@ -1,55 +1,64 @@
 package domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Planet {
 	
-	private int id;
+	private String id;
 	private String name;
+	private String lowerCaseName;
 	private String climate;
 	private String terrain;
-	private int appearances;
+	private int appearance;
 	
-	protected Planet(String name, String weather, String ground, int appearances)
+	protected Planet(String name, String weather, String ground, int appearance)
 	{
 		this.name = name;
+		this.lowerCaseName = name.toLowerCase();
 		this.climate = weather;
 		this.terrain = ground;
-		this.appearances = appearances;
+		this.appearance = appearance;
 	}
-
+	
+	protected Planet(String id, String name, String weather, String ground, int appearance)
+	{
+		this.id = id;
+		this.name = name;
+		this.lowerCaseName = name.toLowerCase();
+		this.climate = weather;
+		this.terrain = ground;
+		this.appearance = appearance;
+	}
+	
+	// Dummy constructor to JSON 
+	public Planet()
+	{
+		
+	}
+	
 	// Getters and Setters
-	public int getId() {
+	public String getId() {
 		return id;
 	}	
 	
-	public void setId(int id) {
-		this.id = id;
-	}
 	public String getName() {
 		return name;
 	}
 	
 	public String getTerrain() {
 		return terrain;
-	}
-
-	protected void setTerrain(String terrain) {
-		this.terrain = terrain;
 	}	
-
-	protected void setClimate(String climate) {
-		this.climate = climate;
-	}
 
 	public String getClimate() {
 		return climate;
 	}
-	
-	protected void setAppearances(int appearances)
-	{
-		this.appearances = appearances;
+
+	public int getAppearance() {
+		return appearance;
 	}
 	
-	public int getAppearances() {
-		return appearances;
-	}	
+	public String getLowerCaseName() {
+		return lowerCaseName;
+	}
 }
