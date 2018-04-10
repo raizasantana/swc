@@ -1,4 +1,4 @@
-# Star wars challenge
+# Star Wars challenge
 
 # Routes
 
